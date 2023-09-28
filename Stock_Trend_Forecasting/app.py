@@ -3,6 +3,10 @@
 # import os
 # os.environ['TZ'] = 'UTC'
 
+# Create the cache directory if it doesn't exist
+cache_dir = '/home/appuser/.cache/py-yfinance'
+os.makedirs(cache_dir, exist_ok=True)  # Create the cache directory
+
 import streamlit as st
 from datetime import date
 
