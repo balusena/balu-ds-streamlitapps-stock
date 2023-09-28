@@ -1,6 +1,6 @@
 # pip install streamlit prophet yfinance plotly
 
-# import os
+import os
 # os.environ['TZ'] = 'UTC'
 
 # Create the cache directory if it doesn't exist
