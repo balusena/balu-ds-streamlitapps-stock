@@ -1,4 +1,4 @@
 requests
-yfinance
+yfinance==0.1.68
 prophet
 plotly
