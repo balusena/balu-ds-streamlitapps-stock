@@ -27,6 +27,11 @@ def load_data(ticker):
         start_date = max(pd.Timestamp('2010-01-01'), yf.Ticker(ticker).history(period="max").index.min())
         data = yf.download(ticker, start=start_date.strftime("%Y-%m-%d"), end=TODAY, progress=False)
         data.reset_index(inplace=True)
+        
+        # Rename columns to avoid duplicates
+        data.rename(columns={"Date": "Date", "Open": "Open", "High": "High", "Low": "Low", 
+                             "Close": "Close", "Adj Close": "Adj Close", "Volume": "Volume"}, inplace=True)
+        
         return data
     except Exception as e:
         st.error(f"Error loading data for {ticker}: {str(e)}")
