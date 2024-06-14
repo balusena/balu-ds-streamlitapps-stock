@@ -29,9 +29,8 @@ period = n_years * 365
 def load_data(ticker):
     data = yf.download(ticker, START, TODAY)
     data.reset_index(inplace=True)
-    # Ensure the index is a DatetimeIndex
-    if not isinstance(data['Date'], pd.DatetimeIndex):
-        data['Date'] = pd.to_datetime(data['Date'])
+    # Ensure the Date column is a DatetimeIndex
+    data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
     return data
 
 # Load data
