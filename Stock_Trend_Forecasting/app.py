@@ -28,13 +28,14 @@ def load_data(ticker):
         data.reset_index(inplace=True)
         return data
     except Exception as e:
-        st.error(f"Error loading data: {str(e)}")
+        st.error(f"Error loading data for {ticker}: {str(e)}")
         logging.error(f"Error loading data for {ticker}: {e}")
         return None
 
 
 data_load_state = st.text('Loading data...')
 data = load_data(selected_stock)
+
 if data is not None:
     data_load_state.text('Loading data... done!')
 else:
@@ -54,7 +55,6 @@ def plot_raw_data():
         st.plotly_chart(fig)
     else:
         st.warning("No data available to plot.")
-
 
 plot_raw_data()
 
