@@ -27,15 +27,22 @@ period = n_years * 365
 
 @st.cache_data
 def load_data(ticker):
-    data = yf.download(ticker, START, TODAY, progress=False, threads=False)
-    data.reset_index(inplace=True)
-    data['Date'] = pd.to_datetime(data['Date'])
-    return data
+    try:
+        data = yf.download(ticker, START, TODAY, progress=False, threads=False)
+        if data.empty:
+            st.error(f"No data found for {ticker}. Please try another stock.")
+        else:
+            data.reset_index(inplace=True)
+            data['Date'] = pd.to_datetime(data['Date'])
+        return data
+    except Exception as e:
+        st.error(f"Error loading data for {ticker}: {e}")
+        return pd.DataFrame()
 
 # Load data
 data_load_state = st.text('Loading data...')
 data = load_data(selected_stock)
-data_load_state.text('Loading data... done!')
+data_load_state.text('')
 
 # Display raw data
 st.subheader('Raw data')
@@ -44,38 +51,42 @@ st.write(data.tail())
 # Plot raw data function
 def plot_raw_data():
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data['Date'], y=data['Open'], name="stock_open"))
-    fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], name="stock_close"))
-    fig.layout.update(title_text='Time Series data with Rangeslider', xaxis_rangeslider_visible=True)
+    if not data.empty:
+        fig.add_trace(go.Scatter(x=data['Date'], y=data['Open'], name="stock_open"))
+        fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], name="stock_close"))
+        fig.layout.update(title_text='Time Series data with Rangeslider', xaxis_rangeslider_visible=True)
     st.plotly_chart(fig)
 
 # Plot raw data
 plot_raw_data()
 
-# Prepare data for forecasting
-df_train = data[['Date', 'Close']].rename(columns={"Date": "ds", "Close": "y"})
+if not data.empty:
+    # Prepare data for forecasting
+    df_train = data[['Date', 'Close']].rename(columns={"Date": "ds", "Close": "y"})
 
-# Ensure 'ds' column is in datetime format
-df_train['ds'] = pd.to_datetime(df_train['ds'])
+    # Ensure 'ds' column is in datetime format
+    df_train['ds'] = pd.to_datetime(df_train['ds'])
 
-# Train the Prophet model
-m = Prophet()
-m.fit(df_train)
+    # Train the Prophet model
+    m = Prophet()
+    m.fit(df_train)
 
-# Create future dataframe and make predictions
-future = m.make_future_dataframe(periods=period)
-forecast = m.predict(future)
+    # Create future dataframe and make predictions
+    future = m.make_future_dataframe(periods=period)
+    forecast = m.predict(future)
 
-# Display forecast data
-st.subheader('Forecast data')
-st.write(forecast.tail())
+    # Display forecast data
+    st.subheader('Forecast data')
+    st.write(forecast.tail())
 
-# Plot forecast
-st.write(f'Forecast plot for {n_years} years')
-fig1 = plot_plotly(m, forecast)
-st.plotly_chart(fig1)
+    # Plot forecast
+    st.write(f'Forecast plot for {n_years} years')
+    fig1 = plot_plotly(m, forecast)
+    st.plotly_chart(fig1)
 
-# Plot forecast components
-st.write("Forecast components")
-fig2 = m.plot_components(forecast)
-st.write(fig2)
+    # Plot forecast components
+    st.write("Forecast components")
+    fig2 = m.plot_components(forecast)
+    st.write(fig2)
+else:
+    st.write("No data available for the selected stock.")
