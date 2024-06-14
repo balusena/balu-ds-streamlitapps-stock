@@ -2,3 +2,5 @@ requests
 yfinance==0.1.68
 prophet
 plotly
+pandas
+numpy
