@@ -1,3 +1,6 @@
+# Install necessary packages in your environment
+# pip install streamlit prophet yfinance plotly
+
 import streamlit as st
 from datetime import date
 import yfinance as yf
@@ -10,7 +13,7 @@ st.title('Stock Trend Forecasting')
 TODAY = date.today().strftime("%Y-%m-%d")
 
 # Stock symbols for selection
-stocks = ('GOOG', 'AAPL', 'MSFT', 'META', 'AMZN')
+stocks = ('GOOG', 'AAPL', 'MSFT', 'META')
 selected_stock = st.selectbox('Select dataset for prediction', stocks)
 
 # Slider for selecting number of years to forecast
@@ -18,9 +21,9 @@ n_years = st.slider('Years of prediction:', 1, 4)
 period = n_years * 365  # Convert years into days
 
 # Function to load data from Yahoo Finance using yfinance
-@st.cache  # Cache data loading process to optimize performance
+@st.cache_data  # Cache data loading process to optimize performance
 def load_data(ticker):
-    data = yf.download(ticker, start="2010-01-01", end=TODAY)
+    data = yf.download(ticker, start="2010-01-01", end=TODAY, progress=False)
     data.reset_index(inplace=True)
     return data
 
