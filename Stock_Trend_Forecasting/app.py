@@ -6,7 +6,6 @@ from prophet import Prophet
 from prophet.plot import plot_plotly
 from plotly import graph_objs as go
 import pandas as pd
-import numpy as np
 
 # Set the time zone environment variable
 os.environ['TZ'] = 'UTC'
@@ -30,7 +29,6 @@ period = n_years * 365
 def load_data(ticker):
     data = yf.download(ticker, START, TODAY)
     data.reset_index(inplace=True)
-    # Ensure the Date column is a DatetimeIndex
     data['Date'] = pd.to_datetime(data['Date'])
     return data
 
@@ -81,7 +79,3 @@ st.plotly_chart(fig1)
 st.write("Forecast components")
 fig2 = m.plot_components(forecast)
 st.write(fig2)
-
-# Handle FutureWarnings from Prophet
-with pd.option_context('mode.chained_assignment', None):
-    forecast['ds'] = forecast['ds'].apply(lambda x: np.array(x.to_pydatetime(), dtype='datetime64[ns]'))
