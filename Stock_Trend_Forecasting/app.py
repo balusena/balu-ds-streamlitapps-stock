@@ -1,104 +1,64 @@
 import streamlit as st
 from datetime import date
-import pandas as pd
+
 import yfinance as yf
 from prophet import Prophet
 from prophet.plot import plot_plotly
 from plotly import graph_objs as go
-import logging
 
-# Set up Streamlit title and date variables
-st.title('Stock Trend Forecasting')
+START = "2017-01-01"
 TODAY = date.today().strftime("%Y-%m-%d")
 
-# Stock symbols for selection
-stocks = ('GOOG', 'AAPL', 'MSFT', 'META', 'AMZN')
-selected_stock = st.selectbox('Select dataset for prediction', stocks)
+st.title("Stock Prediction")
 
-# Slider for selecting number of years to forecast
-n_years = st.slider('Years of prediction:', 1, 4)
-period = n_years * 365  # Convert years into days
+stocks = ("ZOMATO.NS","VEDL.NS","IRFC.NS","RVNL.NS", "HINDALCO.NS","JSWSTEEL.NS","GRASIM.NS","ULTRACEMCO.NS","BAJAJ-AUTO.NS","IRCTC.NS","GC=F", "AAPL", "TSLA","ADANIENT.NS","ADANIPORTS.NS","ADANIPOWER.NS","ADANIGREEN.NS","ATGL.NS")
+selected_stocks = st.selectbox("Select Stock", stocks)
 
-# Function to load data from Yahoo Finance using yfinance
-@st.cache
+n_years = st.slider("Years of Prediction", 0.1, 15.0,step=0.1)
+period = int(n_years * 365.0)
+
+
 def load_data(ticker):
-    try:
-        # Dynamically adjust START date based on the earliest available date for the stock symbol
-        start_date = max(pd.Timestamp('2020-01-01'), yf.Ticker(ticker).history(period="max").index.min())
-        data = yf.download(ticker, start=start_date.strftime("%Y-%m-%d"), end=TODAY, progress=False)
-        data.reset_index(inplace=True)
-        
-        # Rename columns to avoid duplicates and ensure consistency
-        data.rename(columns={"Date": "ds", "Open": "open", "High": "high", "Low": "low", 
-                             "Close": "y", "Adj Close": "adj_close", "Volume": "volume"}, inplace=True)
-        
-        return data
-    except Exception as e:
-        st.error(f"Error loading data for {ticker}: {str(e)}")
-        logging.error(f"Error loading data for {ticker}: {e}")
-        return None
+    data = yf.download(ticker, START, TODAY)
+    data.reset_index(inplace=True)
+    return data
 
-# Handle exceptions during data loading and processing
-try:
-    # Load data for the selected stock symbol
-    data_load_state = st.text('Loading data...')
-    data = load_data(selected_stock)
-    if data is not None and not data.empty:
-        data_load_state.text('Loading data... done!')
-        st.write(data.head())  # Inspect the first few rows for debugging
-    else:
-        data_load_state.text('Loading data... failed!')
 
-    # Display raw data
-    st.subheader('Raw data')
-    if data is not None and not data.empty:
-        st.write(data.tail())
-    else:
-        st.error("No data available to display.")
+data_load_state = st.text("Load data....")
+data = load_data(selected_stocks)
+data_load_state.text("Loding data...done!")
 
-    # Plot raw data using Plotly
-    st.subheader('Raw data plot')
-    if data is not None and not data.empty:
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data['ds'], y=data['open'], mode='lines', name='Open'))
-        fig.add_trace(go.Scatter(x=data['ds'], y=data['y'], mode='lines', name='Close'))
-        fig.layout.update(title_text='Time Series data with Rangeslider', xaxis_rangeslider_visible=True)
-        st.plotly_chart(fig)
-    else:
-        st.error("No data available to plot.")
+st.subheader('Raw data')
+st.write(data.tail())
 
-    # Forecasting with Prophet
-    st.subheader('Forecasting')
 
-    if data is not None and not data.empty:
-        # Prepare data for Prophet
-        df_train = data[['ds', 'y']].copy()
+def plot_raw_data():
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Open'], name='stock_open'))
+    fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], name='stock_close'))
+    fig.layout.update(title_text="Time Series Data", xaxis_rangeslider_visible=True)
+    st.plotly_chart(fig)
 
-        # Create Prophet model and fit data
-        m = Prophet()
-        m.fit(df_train)
 
-        # Make future dataframe for forecasting
-        future = m.make_future_dataframe(periods=period)
+plot_raw_data()
 
-        # Forecasting
-        forecast = m.predict(future)
+# forecasting
 
-        # Display forecast data
-        st.write('Forecast data')
-        st.write(forecast.tail())
+df_train = data[['Date', 'Close']]
+df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})
 
-        # Plot forecast
-        fig1 = plot_plotly(m, forecast)
-        st.plotly_chart(fig1)
+m = Prophet()
+m.fit(df_train)
+future = m.make_future_dataframe(periods=period)
+forecast = m.predict(future)
 
-        # Plot forecast components
-        st.write('Forecast components')
-        fig2 = m.plot_components(forecast)
-        st.write(fig2)
-    else:
-        st.error("Forecasting cannot be performed due to missing data.")
+st.subheader('Forecast data')
+st.write(forecast.tail())
 
-except Exception as e:
-    st.error(f"Error occurred: {str(e)}")
-    logging.error(f"Error occurred: {e}")
+st.write(selected_stocks, 'Forecast Data')
+fig1 = plot_plotly(m, forecast)
+st.plotly_chart(fig1)
+
+st.write('Forecast Components')
+fig2 = m.plot_components(forecast)
+st.write(fig2)
