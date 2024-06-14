@@ -46,7 +46,7 @@ try:
     # Load data for the selected stock symbol
     data_load_state = st.text('Loading data...')
     data = load_data(selected_stock)
-    if data is not None:
+    if data is not None and not data.empty:
         data_load_state.text('Loading data... done!')
         st.write(data.head())  # Inspect the first few rows for debugging
     else:
