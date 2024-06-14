@@ -7,15 +7,12 @@ from prophet.plot import plot_plotly
 from plotly import graph_objs as go
 import logging
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
-
 # Set up Streamlit title and date variables
 st.title('Stock Trend Forecasting')
 TODAY = date.today().strftime("%Y-%m-%d")
 
 # Stock symbols for selection
-stocks = ('GOOG', 'AAPL', 'MSFT', 'META', 'AMZN')  # Include AMZN (Amazon)
+stocks = ('GOOG', 'AAPL', 'MSFT', 'META', 'AMZN')
 selected_stock = st.selectbox('Select dataset for prediction', stocks)
 
 # Slider for selecting number of years to forecast
@@ -23,11 +20,21 @@ n_years = st.slider('Years of prediction:', 1, 4)
 period = n_years * 365  # Convert years into days
 
 # Function to load data from Yahoo Finance using yfinance
-@st.cache_data  # Cache data loading process to optimize performance
+@st.cache
 def load_data(ticker):
     try:
-        data = yf.download(ticker, start="2010-01-01", end=TODAY, progress=False)
+        # Dynamically adjust START date based on the earliest available date for the stock symbol
+        start_date = max(pd.Timestamp('2010-01-01'), yf.Ticker(ticker).history(period="max").index.min())
+        data = yf.download(ticker, start=start_date.strftime("%Y-%m-%d"), end=TODAY, progress=False)
         data.reset_index(inplace=True)
+        
+        # Ensure the Date column is in datetime format and timezone-aware
+        data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize(None)  # Remove timezone info
+        
+        # Rename columns to avoid duplicates and ensure consistency
+        data.rename(columns={"Date": "ds", "Open": "open", "High": "high", "Low": "low", 
+                             "Close": "y", "Adj Close": "adj_close", "Volume": "volume"}, inplace=True)
+        
         return data
     except Exception as e:
         st.error(f"Error loading data for {ticker}: {str(e)}")
@@ -39,7 +46,7 @@ try:
     # Load data for the selected stock symbol
     data_load_state = st.text('Loading data...')
     data = load_data(selected_stock)
-    if data is not None and not data.empty:
+    if data is not None:
         data_load_state.text('Loading data... done!')
         st.write(data.head())  # Inspect the first few rows for debugging
     else:
@@ -56,8 +63,8 @@ try:
     st.subheader('Raw data plot')
     if data is not None and not data.empty:
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data['Date'], y=data['Open'], mode='lines', name='Open'))
-        fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], mode='lines', name='Close'))
+        fig.add_trace(go.Scatter(x=data['ds'], y=data['open'], mode='lines', name='Open'))
+        fig.add_trace(go.Scatter(x=data['ds'], y=data['y'], mode='lines', name='Close'))
         fig.layout.update(title_text='Time Series data with Rangeslider', xaxis_rangeslider_visible=True)
         st.plotly_chart(fig)
     else:
@@ -68,8 +75,7 @@ try:
 
     if data is not None and not data.empty:
         # Prepare data for Prophet
-        df_train = data[['Date', 'Close']].copy()
-        df_train.rename(columns={"Date": "ds", "Close": "y"}, inplace=True)
+        df_train = data[['ds', 'y']].copy()
 
         # Create Prophet model and fit data
         m = Prophet()
