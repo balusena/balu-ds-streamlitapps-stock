@@ -28,9 +28,6 @@ def load_data(ticker):
         data = yf.download(ticker, start=start_date.strftime("%Y-%m-%d"), end=TODAY, progress=False)
         data.reset_index(inplace=True)
         
-        # Ensure the Date column is in datetime format and timezone-aware
-        data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize(None)  # Remove timezone info
-        
         # Rename columns to avoid duplicates and ensure consistency
         data.rename(columns={"Date": "ds", "Open": "open", "High": "high", "Low": "low", 
                              "Close": "y", "Adj Close": "adj_close", "Volume": "volume"}, inplace=True)
