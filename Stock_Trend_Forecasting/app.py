@@ -1,6 +1,3 @@
-# Install necessary packages in your environment
-# pip install streamlit prophet yfinance plotly
-
 import streamlit as st
 from datetime import date
 import pandas as pd
@@ -15,7 +12,7 @@ st.title('Stock Trend Forecasting')
 TODAY = date.today().strftime("%Y-%m-%d")
 
 # Stock symbols for selection
-stocks = ('GOOG', 'AAPL', 'MSFT', 'META', 'AMZN')
+stocks = ('GOOG', 'AAPL', 'MSFT', 'META', 'AMZN')  # Include AMZN (Amazon)
 selected_stock = st.selectbox('Select dataset for prediction', stocks)
 
 # Slider for selecting number of years to forecast
@@ -36,38 +33,39 @@ def load_data(ticker):
         logging.error(f"Error loading data for {ticker}: {e}")
         return None
 
-# Load data for the selected stock symbol
-data_load_state = st.text('Loading data...')
-data = load_data(selected_stock)
-if data is not None:
-    data_load_state.text('Loading data... done!')
-    st.write(data.head())  # Inspect the first few rows for debugging
-else:
-    data_load_state.text('Loading data... failed!')
+# Handle exceptions during data loading and processing
+try:
+    # Load data for the selected stock symbol
+    data_load_state = st.text('Loading data...')
+    data = load_data(selected_stock)
+    if data is not None:
+        data_load_state.text('Loading data... done!')
+        st.write(data.head())  # Inspect the first few rows for debugging
+    else:
+        data_load_state.text('Loading data... failed!')
 
-# Display raw data
-st.subheader('Raw data')
-if data is not None and not data.empty:
-    st.write(data.tail())
-else:
-    st.error("No data available to display.")
+    # Display raw data
+    st.subheader('Raw data')
+    if data is not None and not data.empty:
+        st.write(data.tail())
+    else:
+        st.error("No data available to display.")
 
-# Plot raw data using Plotly
-st.subheader('Raw data plot')
-if data is not None and not data.empty:
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data['Date'], y=data['Open'], mode='lines', name='Open'))
-    fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], mode='lines', name='Close'))
-    fig.layout.update(title_text='Time Series data with Rangeslider', xaxis_rangeslider_visible=True)
-    st.plotly_chart(fig)
-else:
-    st.error("No data available to plot.")
+    # Plot raw data using Plotly
+    st.subheader('Raw data plot')
+    if data is not None and not data.empty:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=data['Date'], y=data['Open'], mode='lines', name='Open'))
+        fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], mode='lines', name='Close'))
+        fig.layout.update(title_text='Time Series data with Rangeslider', xaxis_rangeslider_visible=True)
+        st.plotly_chart(fig)
+    else:
+        st.error("No data available to plot.")
 
-# Forecasting with Prophet
-st.subheader('Forecasting')
+    # Forecasting with Prophet
+    st.subheader('Forecasting')
 
-if data is not None and not data.empty:
-    try:
+    if data is not None and not data.empty:
         # Prepare data for Prophet
         df_train = data[['Date', 'Close']].copy()
         df_train.rename(columns={"Date": "ds", "Close": "y"}, inplace=True)
@@ -94,8 +92,9 @@ if data is not None and not data.empty:
         st.write('Forecast components')
         fig2 = m.plot_components(forecast)
         st.write(fig2)
-    except Exception as e:
-        st.error(f"Error during forecasting: {str(e)}")
-        logging.error(f"Error during forecasting: {e}")
-else:
-    st.error("Forecasting cannot be performed due to missing data.")
+    else:
+        st.error("Forecasting cannot be performed due to missing data.")
+
+except Exception as e:
+    st.error(f"Error occurred: {str(e)}")
+    logging.error(f"Error occurred: {e}")
