@@ -27,7 +27,7 @@ period = n_years * 365
 
 @st.cache_data
 def load_data(ticker):
-    data = yf.download(ticker, START, TODAY)
+    data = yf.download(ticker, START, TODAY, progress=False)
     data.reset_index(inplace=True)
     data['Date'] = pd.to_datetime(data['Date'])
     return data
