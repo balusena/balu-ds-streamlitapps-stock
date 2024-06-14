@@ -6,6 +6,7 @@ from prophet import Prophet
 from prophet.plot import plot_plotly
 from plotly import graph_objs as go
 import pandas as pd
+import numpy as np
 
 # Set the time zone environment variable
 os.environ['TZ'] = 'UTC'
@@ -56,6 +57,9 @@ plot_raw_data()
 # Prepare data for forecasting
 df_train = data[['Date', 'Close']].rename(columns={"Date": "ds", "Close": "y"})
 
+# Ensure 'ds' column is in datetime format
+df_train['ds'] = pd.to_datetime(df_train['ds'])
+
 # Train the Prophet model
 m = Prophet()
 m.fit(df_train)
@@ -77,3 +81,7 @@ st.plotly_chart(fig1)
 st.write("Forecast components")
 fig2 = m.plot_components(forecast)
 st.write(fig2)
+
+# Handle FutureWarnings from Prophet
+with pd.option_context('mode.chained_assignment', None):
+    forecast['ds'] = forecast['ds'].apply(lambda x: np.array(x.to_pydatetime(), dtype='datetime64[ns]'))
