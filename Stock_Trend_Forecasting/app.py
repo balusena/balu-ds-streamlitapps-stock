@@ -24,7 +24,7 @@ period = n_years * 365  # Convert years into days
 def load_data(ticker):
     try:
         # Dynamically adjust START date based on the earliest available date for the stock symbol
-        start_date = max(pd.Timestamp('2010-01-01'), yf.Ticker(ticker).history(period="max").index.min())
+        start_date = max(pd.Timestamp('2020-01-01'), yf.Ticker(ticker).history(period="max").index.min())
         data = yf.download(ticker, start=start_date.strftime("%Y-%m-%d"), end=TODAY, progress=False)
         data.reset_index(inplace=True)
         
