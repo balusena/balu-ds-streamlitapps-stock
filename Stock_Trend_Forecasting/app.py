@@ -30,7 +30,7 @@ def load_data(ticker):
     data = yf.download(ticker, START, TODAY)
     data.reset_index(inplace=True)
     # Ensure the Date column is a DatetimeIndex
-    data['Date'] = pd.to_datetime(data['Date'], errors='coerce')
+    data['Date'] = pd.to_datetime(data['Date'])
     return data
 
 # Load data
@@ -55,7 +55,6 @@ plot_raw_data()
 
 # Prepare data for forecasting
 df_train = data[['Date', 'Close']].rename(columns={"Date": "ds", "Close": "y"})
-df_train['ds'] = df_train['ds'].dt.date
 
 # Train the Prophet model
 m = Prophet()
