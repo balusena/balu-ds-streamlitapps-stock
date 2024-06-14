@@ -28,9 +28,12 @@ def load_data(ticker):
         data = yf.download(ticker, start=start_date.strftime("%Y-%m-%d"), end=TODAY, progress=False)
         data.reset_index(inplace=True)
         
-        # Rename columns to avoid duplicates
-        data.rename(columns={"Date": "Date", "Open": "Open", "High": "High", "Low": "Low", 
-                             "Close": "Close", "Adj Close": "Adj Close", "Volume": "Volume"}, inplace=True)
+        # Ensure the Date column is in datetime format and timezone-aware
+        data['Date'] = pd.to_datetime(data['Date']).dt.tz_localize('UTC')
+        
+        # Rename columns to avoid duplicates and ensure consistency
+        data.rename(columns={"Date": "ds", "Open": "open", "High": "high", "Low": "low", 
+                             "Close": "y", "Adj Close": "adj_close", "Volume": "volume"}, inplace=True)
         
         return data
     except Exception as e:
@@ -60,8 +63,8 @@ try:
     st.subheader('Raw data plot')
     if data is not None and not data.empty:
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=data['Date'], y=data['Open'], mode='lines', name='Open'))
-        fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], mode='lines', name='Close'))
+        fig.add_trace(go.Scatter(x=data['ds'], y=data['open'], mode='lines', name='Open'))
+        fig.add_trace(go.Scatter(x=data['ds'], y=data['y'], mode='lines', name='Close'))
         fig.layout.update(title_text='Time Series data with Rangeslider', xaxis_rangeslider_visible=True)
         st.plotly_chart(fig)
     else:
@@ -72,8 +75,7 @@ try:
 
     if data is not None and not data.empty:
         # Prepare data for Prophet
-        df_train = data[['Date', 'Close']].copy()
-        df_train.rename(columns={"Date": "ds", "Close": "y"}, inplace=True)
+        df_train = data[['ds', 'y']].copy()
 
         # Create Prophet model and fit data
         m = Prophet()
